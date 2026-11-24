@@ -1,0 +1,495 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kuzatuv</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root {
+  --bg: #070a14; --fg: #f3f5ff; --hint: rgba(243,245,255,.62);
+  --glass-a: rgba(255,255,255,.17); --glass-b: rgba(255,255,255,.05);
+  --edge: rgba(255,255,255,.24); --spec: rgba(255,255,255,.8);
+  --line: rgba(255,255,255,.12); --shadow: rgba(0,0,0,.38);
+  --field: rgba(255,255,255,.08);
+  --ok: #5ee9a0; --warn: #ffcc66; --bad: #ff7a8a; --tint: #5f9bff;
+  --b1: #5b5bf0; --b2: #19c3d9; --b3: #f0509b;
+  color-scheme: dark;
+}
+:root[data-theme="light"] {
+  --bg: #e9eefc; --fg: #10142a; --hint: rgba(16,20,42,.6);
+  --glass-a: rgba(255,255,255,.68); --glass-b: rgba(255,255,255,.3);
+  --edge: rgba(255,255,255,.95); --spec: #fff;
+  --line: rgba(16,20,42,.09); --shadow: rgba(40,50,110,.2);
+  --field: rgba(255,255,255,.55);
+  --ok: #178f55; --warn: #a86d00; --bad: #d03852; --tint: #2d6bff;
+  --b1: #9aa8ff; --b2: #8fe3ee; --b3: #ffb3c9;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--fg); }
+body { font: 16px/1.4 ui-sans-serif, system-ui, -apple-system, "SF Pro Text", "Segoe UI", Roboto, sans-serif; }
+.bg {
+  position: fixed; inset: -20%; z-index: -1; pointer-events: none; opacity: .8; filter: blur(34px);
+  background:
+    radial-gradient(40% 35% at 18% 18%, var(--b1), transparent 70%),
+    radial-gradient(36% 30% at 86% 30%, var(--b2), transparent 70%),
+    radial-gradient(42% 36% at 50% 92%, var(--b3), transparent 70%);
+  animation: drift 30s ease-in-out infinite alternate;
+}
+@keyframes drift { to { transform: translate3d(3%, -2%, 0) scale(1.08) rotate(4deg); } }
+@media (prefers-reduced-motion: reduce) { .bg { animation: none; } }
+
+main { position: relative; max-width: 640px; margin: 0 auto; padding: calc(14px + env(safe-area-inset-top, 0px)) 14px calc(110px + env(safe-area-inset-bottom, 0px)); }
+
+.glass {
+  position: relative; border-radius: 28px; padding: 18px; margin-bottom: 14px;
+  background: linear-gradient(145deg, var(--glass-a), var(--glass-b));
+  -webkit-backdrop-filter: blur(20px) saturate(170%); backdrop-filter: blur(20px) saturate(170%);
+  box-shadow: inset 0 1px 0 var(--edge), inset 0 -1px 0 rgba(255,255,255,.06), 0 14px 34px var(--shadow);
+}
+.glass::before {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px; pointer-events: none; opacity: .85;
+  background: linear-gradient(140deg, var(--spec), transparent 30%, transparent 68%, var(--edge));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); mask-composite: exclude;
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass { background: color-mix(in srgb, var(--bg) 82%, white 8%); }
+}
+
+h2 { font-size: 15px; font-weight: 600; margin: 0 0 10px; }
+small { color: var(--hint); font-size: 13px; }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+.row h2 { margin: 0; }
+
+.hero #count { font-size: 68px; font-weight: 200; letter-spacing: -2px; line-height: 1; font-variant-numeric: tabular-nums; }
+.hero .head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.hero small { display: block; margin-top: 6px; }
+.track { height: 6px; border-radius: 99px; background: var(--line); overflow: hidden; margin-top: 14px; }
+.track > i { display: block; height: 100%; width: 0; border-radius: inherit; background: linear-gradient(90deg, var(--tint), var(--b2)); transition: width .5s ease; }
+.track.slim { margin: 8px 0 0; height: 4px; }
+
+ul { list-style: none; margin: 0; padding: 0; }
+li { display: grid; grid-template-columns: 14px 1fr auto; gap: 12px; align-items: center; padding: 11px 0; border-top: 1px solid var(--line); }
+li:first-child { border-top: 0; }
+li.lim { grid-template-columns: 1fr auto; }
+li.ev { grid-template-columns: 48px 1fr; align-items: start; }
+li.ev time { color: var(--hint); font-size: 13px; font-variant-numeric: tabular-nums; }
+.mid { min-width: 0; display: flex; flex-direction: column; }
+.mid b { overflow-wrap: anywhere; }
+.right { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; font-variant-numeric: tabular-nums; }
+.dot { width: 10px; height: 10px; border-radius: 50%; background: var(--hint); }
+.dot.ok { background: var(--ok); box-shadow: 0 0 10px var(--ok); }
+.dot.slow { background: var(--warn); box-shadow: 0 0 10px var(--warn); }
+.dot.bad { background: var(--bad); box-shadow: 0 0 10px var(--bad); }
+.pill { font-size: 13px; padding: 3px 10px; border-radius: 999px; background: var(--field); box-shadow: inset 0 1px 0 var(--edge); }
+.clock { font-size: 28px; font-weight: 300; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tick { font-variant-numeric: tabular-nums; }
+.empty { color: var(--hint); margin: 4px 0; }
+
+button { font: inherit; cursor: pointer; color: var(--fg); }
+.btn {
+  border: 0; padding: 10px 16px; border-radius: 999px; white-space: nowrap;
+  background: linear-gradient(145deg, var(--glass-a), var(--glass-b));
+  box-shadow: inset 0 1px 0 var(--edge), 0 6px 16px var(--shadow);
+  -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+  transition: transform .15s ease, opacity .15s ease;
+}
+.btn.pri { width: 100%; margin-top: 10px; padding: 13px; font-weight: 600; color: #fff;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--tint) 80%, white 12%), color-mix(in srgb, var(--tint) 52%, transparent)); }
+.btn:active { transform: scale(.97); }
+.btn:disabled { opacity: .5; cursor: default; }
+button.x { background: none; border: 0; color: var(--bad); padding: 2px 0; font-size: 13px; }
+textarea { width: 100%; min-height: 78px; resize: vertical; padding: 12px 14px; border-radius: 20px; border: 1px solid var(--line);
+  background: var(--field); color: var(--fg); font: inherit; box-shadow: inset 0 2px 8px rgba(0,0,0,.12); }
+textarea::placeholder { color: var(--hint); }
+button:focus-visible, textarea:focus-visible { outline: 2px solid var(--tint); outline-offset: 2px; }
+.note { white-space: pre-line; margin: 8px 0 0; font-size: 14px; color: var(--hint); }
+#rstat { display: block; margin-bottom: 6px; }
+#auth { text-align: center; padding: 48px 12px; color: var(--hint); }
+[hidden] { display: none !important; }
+section[data-tab] { display: none; }
+body[data-view="kuzatuv"] section[data-tab="kuzatuv"],
+body[data-view="guruhlar"] section[data-tab="guruhlar"],
+body[data-view="akkauntlar"] section[data-tab="akkauntlar"],
+body[data-view="blok"] section[data-tab="blok"],
+body[data-view="voqealar"] section[data-tab="voqealar"] { display: block; }
+.tabs {
+  position: fixed; left: 50%; transform: translateX(-50%); z-index: 5; display: flex; gap: 4px; padding: 6px;
+  bottom: calc(14px + env(safe-area-inset-bottom, 0px)); width: min(92vw, 460px); border-radius: 999px;
+  background: linear-gradient(145deg, var(--glass-a), var(--glass-b));
+  -webkit-backdrop-filter: blur(22px) saturate(180%); backdrop-filter: blur(22px) saturate(180%);
+  box-shadow: inset 0 1px 0 var(--edge), 0 12px 30px var(--shadow);
+}
+.tabs button { flex: 1; border: 0; background: none; padding: 10px 2px; border-radius: 999px; font-size: 13px; color: var(--hint); }
+.tabs button.on { color: var(--fg); font-weight: 600; background: var(--field); box-shadow: inset 0 1px 0 var(--edge); }
+.btns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+</style>
+</head>
+<body>
+<div class="bg" aria-hidden="true"></div>
+<main>
+  <p id="auth" hidden>Bu sahifani Telegramdagi bot menyusidan oching.</p>
+  <div id="app">
+    <section class="glass hero" data-tab="kuzatuv">
+      <div class="head"><span id="count">0</span><span id="limit">kuzatuvda</span></div>
+      <div class="track"><i id="fill"></i></div>
+      <small id="meta"></small>
+    </section>
+
+    <section class="glass" id="limits" data-tab="kuzatuv" hidden>
+      <h2>Telegram cheklovi</h2>
+      <ul id="lim"></ul>
+    </section>
+
+    <section class="glass" data-tab="kuzatuv">
+      <h2>Yangi username</h2>
+      <textarea id="names" placeholder="@username1 @username2" autocapitalize="none" autocomplete="off" spellcheck="false"></textarea>
+      <button class="btn pri" id="add">Kuzatuvga qo'shish</button>
+      <p class="note" id="note" role="status" aria-live="polite"></p>
+    </section>
+
+    <section class="glass" data-tab="kuzatuv">
+      <div class="row">
+        <h2>Kuzatuvdagilar</h2>
+        <button class="btn" id="recheck">Qayta tekshirish</button>
+      </div>
+      <small id="rstat"></small>
+      <div class="track slim" id="rprog" hidden><i id="rbar"></i></div>
+      <p class="note" id="rnote" role="status" aria-live="polite"></p>
+      <ul id="list"></ul>
+    </section>
+
+    <section class="glass" data-tab="guruhlar">
+      <h2>Guruhlarga avto post</h2>
+      <small id="pstat"></small>
+      <ul id="groups"></ul>
+    </section>
+
+    <section class="glass" data-tab="akkauntlar">
+      <h2>Akkauntlar</h2>
+      <ul id="accs"></ul>
+    </section>
+
+    <section class="glass" data-tab="blok">
+      <h2>Blok ro'yxati</h2>
+      <small id="bstat"></small>
+      <div class="btns">
+        <button class="btn" id="bsync">Kanalni yangilash</button>
+        <button class="btn" id="btog">Avto-bloklash</button>
+      </div>
+      <p class="note" id="bnote" role="status" aria-live="polite"></p>
+    </section>
+
+    <section class="glass" data-tab="blok">
+      <h2>Bot bloklaganlar</h2>
+      <ul id="blocked"></ul>
+    </section>
+
+    <section class="glass" data-tab="voqealar">
+      <h2>So'nggi voqealar</h2>
+      <ul id="events"></ul>
+    </section>
+
+    <nav class="tabs" id="tabs">
+      <button data-go="kuzatuv">Kuzatuv</button>
+      <button data-go="guruhlar">Guruhlar</button>
+      <button data-go="akkauntlar">Akkaunt</button>
+      <button data-go="blok">Blok</button>
+      <button data-go="voqealar">Voqealar</button>
+    </nav>
+  </div>
+</main>
+
+<script>
+const tg = window.Telegram && Telegram.WebApp;
+const $ = id => document.getElementById(id);
+
+function applyTheme() {
+  const dark = tg && tg.colorScheme ? tg.colorScheme !== "light" : !matchMedia("(prefers-color-scheme: light)").matches;
+  document.documentElement.dataset.theme = dark ? "dark" : "light";
+  if (tg) { try { tg.setBackgroundColor(dark ? "#070a14" : "#e9eefc"); tg.setHeaderColor(dark ? "#070a14" : "#e9eefc"); } catch (e) {} }
+}
+if (tg) { tg.ready(); tg.expand(); tg.onEvent("themeChanged", applyTheme); }
+applyTheme();
+
+const HDR = { "Content-Type": "application/json", "X-Init-Data": tg ? tg.initData : "" };
+
+async function api(path, body) {
+  const r = await fetch(path, body === undefined
+    ? { headers: HDR }
+    : { method: "POST", headers: HDR, body: JSON.stringify(body) });
+  if (r.status === 401) throw new Error("auth");
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error || "Xato yuz berdi");
+  return j;
+}
+
+function h(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text !== undefined) e.textContent = text;
+  return e;
+}
+
+function ago(s) {
+  s = Math.max(0, Math.round(s));
+  if (s < 60) return s + " s";
+  if (s < 3600) return Math.floor(s / 60) + " daq";
+  return Math.floor(s / 3600) + " soat";
+}
+
+const LBL = { check: "Username tekshirish", resolve: "Akkaunt qidirish", claim: "Kanal ochish", post: "Guruhga yozish" };
+const PAUSE = { ban: "Ban", mute: "Mute", warn: "Ogohlantirish", slow: "Sekin rejim", write: "Yozish taqiqlangan", left: "Guruhdan chiqarilgan" };
+let skew = 0, running = false, reloading = false;
+const nowS = () => Date.now() / 1000 + skew;
+const pad = n => String(n).padStart(2, "0");
+
+function fmtClock(s) {
+  s = Math.max(0, Math.round(s));
+  const d = Math.floor(s / 86400), hh = Math.floor((s % 86400) / 3600);
+  const m = Math.floor((s % 3600) / 60), sec = s % 60;
+  return (d ? d + " kun " : "") + pad(hh) + ":" + pad(m) + ":" + pad(sec);
+}
+
+function endLabel(until) {
+  const d = new Date(until * 1000);
+  const t = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  if (d.toDateString() === new Date().toDateString()) return t;
+  return d.toLocaleDateString([], { day: "2-digit", month: "2-digit" }) + " " + t;
+}
+
+function clockSpan(until, cls) {
+  const e = h("span", cls || "tick", fmtClock(until - nowS()));
+  e.dataset.until = until;
+  return e;
+}
+
+function tick() {
+  for (const el of document.querySelectorAll("[data-until]")) {
+    const rem = Number(el.dataset.until) - nowS();
+    if (rem <= 0) {
+      el.textContent = "tugadi";
+      if (!reloading) { reloading = true; setTimeout(() => { reloading = false; load(); }, 2000); }
+    } else {
+      el.textContent = fmtClock(rem);
+    }
+  }
+}
+setInterval(tick, 1000);
+
+function renderLimits(s) {
+  const box = $("lim");
+  box.replaceChildren();
+  const ks = Object.keys(s.pool);
+  $("limits").hidden = !ks.length;
+  for (const k of ks) {
+    const li = h("li", "lim");
+    const mid = h("div", "mid");
+    mid.append(h("b", "", LBL[k]), h("small", "", "Hamma akkaunt cheklangan. Tugaydi: " + endLabel(s.pool[k])));
+    li.append(mid, clockSpan(s.pool[k], "clock"));
+    box.append(li);
+  }
+}
+
+function renderRecheck(s) {
+  const r = s.recheck;
+  running = r.running;
+  const btn = $("recheck");
+  btn.disabled = r.running || !s.watch.length;
+  btn.textContent = r.running ? "Tekshirilmoqda " + r.done + "/" + r.total : "Qayta tekshirish";
+  $("rprog").hidden = !r.running;
+  $("rbar").style.width = r.running && r.total ? (100 * r.done / r.total) + "%" : "0%";
+  const st = $("rstat");
+  st.replaceChildren();
+  if (r.last) st.append("Oxirgi tekshiruv: " + ago(s.now - r.last) + " oldin. ");
+  if (!r.running && r.next > s.now) st.append("Keyingisi o'zi: ", clockSpan(r.next), ". ");
+  if (r.cut) st.append("Telegram cheklagani uchun to'liq tugamadi, cheklov tugagach davom etadi.");
+  if (!st.childNodes.length) st.textContent = "Faollik ma'lumotini yangilaydi, o'zi ham muntazam tekshiradi.";
+}
+
+function render(s) {
+  skew = s.now - Date.now() / 1000;
+  renderLimits(s);
+  renderRecheck(s);
+  $("count").textContent = s.watch.length;
+  $("limit").textContent = "kuzatuvda, limit " + s.max;
+  $("fill").style.width = Math.min(100, 100 * s.watch.length / s.max) + "%";
+  const liveN = s.accs.filter(a => a.ok).length;
+  $("meta").textContent = "Faol akkaunt: " + liveN + "/" + s.accs.length + ". Hammasini tekshirib chiqish taxminan " + ago(s.cycle) + ".";
+
+  const list = $("list");
+  list.replaceChildren();
+  if (!s.watch.length) list.append(h("p", "empty", "Ro'yxat bo'sh. Yuqoridagi maydonga @username yozing."));
+  for (const w of s.watch) {
+    const age = w.t ? s.now - w.t : null;
+    const fresh = age !== null && age <= Math.max(s.cycle * 2 + 15, 30);
+    const li = h("li");
+    li.append(h("span", "dot " + (age === null ? "" : fresh ? "ok" : "slow")));
+    const mid = h("div", "mid");
+    mid.append(h("b", "", "@" + w.name), h("small", "", w.info || "Faollik ma'lumoti yo'q"));
+    const right = h("div", "right");
+    right.append(h("small", "", age === null ? "kutilmoqda" : ago(age) + " oldin"));
+    const del = h("button", "x", "O'chirish");
+    del.onclick = () => remove(w.name);
+    right.append(del);
+    li.append(mid, right);
+    list.append(li);
+  }
+
+  $("pstat").textContent = (s.post.on ? "Avto post yoqilgan" : "Avto post o'chiq") +
+    ". Matn: " + s.post.texts + ", habarlar orasida: " + ago(s.post.gap) + ", tsikllar orasida: " + ago(s.post.cycle) + ".";
+  const gl = $("groups");
+  gl.replaceChildren();
+  if (!s.groups.length) gl.append(h("p", "empty", "Guruh yo'q. Botda 👥 Guruhlar orqali qo'shing."));
+  for (const g of s.groups) {
+    const li = h("li");
+    const paused = g.forever || g.until > 0;
+    li.append(h("span", "dot " + (!g.enabled ? "" : paused ? "bad" : "ok")));
+    const mid = h("div", "mid");
+    mid.append(h("b", "", g.title));
+    const sm = h("small");
+    if (!g.enabled) sm.append("O'chirilgan");
+    else if (g.forever) sm.append((PAUSE[g.kind] || "Cheklov") + ": muddatsiz");
+    else if (g.until > 0) sm.append((PAUSE[g.kind] || "Cheklov") + ": ", clockSpan(g.until), " (" + endLabel(g.until) + " gacha)");
+    else if (s.post.on && s.post.running) sm.append("Tsikl ketmoqda");
+    else if (s.post.on && s.post.next_cycle > s.now) sm.append("Keyingi tsikl: ", clockSpan(s.post.next_cycle));
+    else sm.append("Yuborilgan: " + g.sent);
+    mid.append(sm);
+    li.append(mid, h("span", "pill", !g.enabled ? "o'chiq" : paused ? "pauza" : "faol"));
+    gl.append(li);
+  }
+
+  const b = s.bl;
+  running = running || b.running;
+  $("bstat").textContent = "Kanal: @" + b.channel + ". Avto-bloklash: " + (b.on ? "yoqilgan" : "o'chiq") +
+    ". Ro'yxatda: " + b.users + " username, " + b.ids + " id, " + b.phones + " telefon. Bloklangan: " + b.count + " ta. " +
+    "Oxirgi yangilanish: " + (b.synced ? ago(s.now - b.synced) + " oldin" : "hali o'qilmagan") + ".";
+  $("bsync").disabled = b.running;
+  $("bsync").textContent = b.running ? "O'qilmoqda: " + b.n + " post" : "Kanalni yangilash";
+  $("btog").textContent = b.on ? "Avto-bloklashni o'chirish" : "Avto-bloklashni yoqish";
+  const bn = $("bnote");
+  if (b.retry > s.now) { bn.replaceChildren("Telegram cheklagan: ", clockSpan(b.retry)); }
+  const bk = $("blocked");
+  bk.replaceChildren();
+  if (!b.blocked.length) bk.append(h("p", "empty", "Bot hali hech kimni bloklamagan."));
+  for (const x of b.blocked) {
+    const li = h("li");
+    li.append(h("span", "dot bad"));
+    const mid = h("div", "mid");
+    mid.append(h("b", "", x.who), h("small", "", x.by + " bo'yicha, post #" + x.post));
+    const right = h("div", "right");
+    right.append(h("small", "", ago(s.now - x.t) + " oldin"));
+    const btn = h("button", "x", "Blokdan chiqarish");
+    btn.onclick = () => unblock(x.id);
+    right.append(btn);
+    li.append(mid, right);
+    bk.append(li);
+  }
+
+  const accs = $("accs");
+  accs.replaceChildren();
+  if (!s.accs.length) accs.append(h("p", "empty", "Akkaunt yo'q. Botda 🔑 tugmasi orqali qo'shing."));
+  for (const a of s.accs) {
+    const li = h("li");
+    const bl = Object.entries(a.blocks);
+    li.append(h("span", "dot " + (!a.ok ? "bad" : (a.spam || bl.length) ? "slow" : "ok")));
+    const mid = h("div", "mid");
+    mid.append(h("b", "", a.label));
+    if (a.claimed) mid.append(h("small", "", "Akkaunt usernamesi: @" + a.claimed));
+    for (const [k, u] of bl) {
+      const sm = h("small");
+      sm.append(LBL[k] + ": ", clockSpan(u), " (" + endLabel(u) + " gacha)");
+      mid.append(sm);
+    }
+    if (a.spam) {
+      const sm = h("small");
+      if (a.spam.state === "until") sm.append("Spam cheklovi: ", clockSpan(a.spam.until), " (" + endLabel(a.spam.until) + " gacha)");
+      else sm.append("Spam cheklovi: muddat botda kiritilmagan");
+      mid.append(sm);
+    }
+    li.append(mid, h("span", "pill", !a.ok ? "ulanmagan" : a.spam ? "spam" : bl.length ? "cheklangan" : "faol"));
+    accs.append(li);
+  }
+
+  const ev = $("events");
+  ev.replaceChildren();
+  if (!s.events.length) ev.append(h("p", "empty", "Hozircha voqea yo'q."));
+  for (const e of s.events) {
+    const li = h("li", "ev");
+    const t = new Date(e.t * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    li.append(h("time", "", t), h("span", "", e.text));
+    ev.append(li);
+  }
+}
+
+async function load() {
+  try {
+    render(await api("/api/state"));
+    $("auth").hidden = true;
+    $("app").hidden = false;
+  } catch (e) {
+    if (e.message === "auth") { $("auth").hidden = false; $("app").hidden = true; }
+  }
+}
+
+async function remove(name) {
+  try { await api("/api/remove", { name }); await load(); }
+  catch (e) { $("note").textContent = e.message; }
+}
+
+$("add").onclick = async () => {
+  const text = $("names").value.trim();
+  if (!text) return;
+  $("add").disabled = true;
+  try {
+    const r = await api("/api/add", { names: text });
+    $("names").value = "";
+    $("note").textContent = r.skipped.length ? r.skipped.join("\n") : "Qo'shildi: " + r.added.length + " ta";
+    await load();
+  } catch (e) {
+    $("note").textContent = e.message;
+  }
+  $("add").disabled = false;
+};
+
+$("recheck").onclick = async () => {
+  $("rnote").textContent = "";
+  $("recheck").disabled = true;
+  try { await api("/api/recheck", {}); }
+  catch (e) { $("rnote").textContent = e.message; }
+  await load();
+};
+
+$("bsync").onclick = async () => {
+  $("bnote").textContent = "";
+  try { await api("/api/bl/sync", {}); } catch (e) { $("bnote").textContent = e.message; }
+  await load();
+};
+$("btog").onclick = async () => {
+  try { await api("/api/bl/toggle", {}); } catch (e) { $("bnote").textContent = e.message; }
+  await load();
+};
+async function unblock(id) {
+  try { await api("/api/bl/unblock", { id: String(id) }); } catch (e) { $("bnote").textContent = e.message; }
+  await load();
+}
+
+const TABS = ["kuzatuv", "guruhlar", "akkauntlar", "blok", "voqealar"];
+function showTab(name) {
+  if (!TABS.includes(name)) name = "kuzatuv";
+  document.body.dataset.view = name;
+  for (const b of document.querySelectorAll("#tabs button")) b.classList.toggle("on", b.dataset.go === name);
+  window.scrollTo(0, 0);
+}
+for (const b of document.querySelectorAll("#tabs button")) b.onclick = () => showTab(b.dataset.go);
+showTab(new URLSearchParams(location.search).get("tab"));
+
+(async function loop() {
+  if (!document.hidden) await load();
+  setTimeout(loop, running ? 1500 : 4000);
+})();
+</script>
+</body>
+</html>
